@@ -30,8 +30,6 @@ class FileProcessor:
         self.file_key = file_key
         self.file = self._download_file_from_s3()
 
-
-
     def process_file(self):
         """
         Function that chooses calls correct processing function

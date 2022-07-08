@@ -31,7 +31,11 @@ def handler(event, context):
         return response
 
     except:
-        return {"statusCode": 500, "body": json.dumps("Error Extracting Variables from Event")}
+        return {
+            "statusCode": 500,
+            "body": json.dumps("Error Extracting Variables from Event"),
+        }
+
 
 def process_file(bucket, file_key):
     """
