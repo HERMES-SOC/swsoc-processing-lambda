@@ -1,10 +1,11 @@
 """
-This Module contains the FileProcessor class that will distinguish the appropriate
-HERMES intrument library to use when processing the file based off which bucket the
-file is located in.
+This Module contains the FileProcessor class that will distinguish
+the appropriate HERMES intrument library to use when processing
+the file based off which bucket the file is located in.
 
-TODO: Skeleton Code for initial repo, class still needs to be implemented including
-logging to DynamoDB + S3 log file and docstrings expanded
+TODO: Skeleton Code for initial repo, class still needs to be
+implemented including logging to DynamoDB + S3 log
+file and docstrings expanded
 """
 
 import logging
@@ -16,8 +17,9 @@ logger = logging.getLogger()
 
 class FileProcessor:
     """
-    Main FileProcessor class which initializes an object with the data file and the
-    bucket event which triggered the lambda function to be called.
+    Main FileProcessor class which initializes an object with the
+    data file and the bucket event which triggered the lambda
+    function to be called.
     """
 
     def __init__(self, bucket, file_key):
@@ -62,20 +64,22 @@ class FileProcessor:
             logger.info("File Downloaded Successfully: %s", self.file_key)
             return True
 
-        except:
-            logger.error("Error when Downloading File: %s", self.file_key)
-            return None
+        except BaseException as exception:
+            logger.error("Error when Processing File: %s", self.file_key)
+            raise exception
 
     def _log_status_in_dynamo_db(self):
         """
-        This function logs the if the file was processed successfully/unsuccessfully
+        This function logs the if the file was processed
+        successfully/unsuccessfully
         in a DynamoDB table
         TODO: Add logging logic
         """
 
     def _log_status_in_s3(self):
         """
-        This function logs the if the file was processed successfully/unsuccessfully
+        This function logs the if the file was processed
+        successfully/unsuccessfully
         in a logfile in an S3 Bucket
         TODO: Add logging logic
         """
@@ -83,7 +87,8 @@ class FileProcessor:
     def _process_spani_file(self):
         """
         This function processes files from the SPAN-i Instrument
-        The repo for this package can be found: https://github.com/HERMES-SOC/hermes_spani
+        The repo for this package can be found:
+        https://github.com/HERMES-SOC/hermes_spani
         TODO: Add processing logic
         """
         # import hermes_spani
@@ -91,13 +96,15 @@ class FileProcessor:
         try:
             logger.info("File Processed Successfully: %s", self.file_key)
 
-        except:
+        except BaseException as exception:
             logger.error("Error when Processing File: %s", self.file_key)
+            raise exception
 
     def _process_nemesis_file(self):
         """
         This function processes files from the NEMESIS Instrument
-        The repo for this package can be found: https://github.com/HERMES-SOC/hermes_nemesis
+        The repo for this package can be found:
+        https://github.com/HERMES-SOC/hermes_nemesis
         TODO: Add processing logic
         """
         # import hermes_nemesis
@@ -105,13 +112,15 @@ class FileProcessor:
         try:
             logger.info("File Processed Successfully: %s", self.file_key)
 
-        except:
+        except BaseException as exception:
             logger.error("Error when Processing File: %s", self.file_key)
+            raise exception
 
     def _process_eea_file(self):
         """
         This function processes files from the EEA Instrument
-        The repo for this package can be found: https://github.com/HERMES-SOC/hermes_eea
+        The repo for this package can be found:
+        https://github.com/HERMES-SOC/hermes_eea
         TODO: Add processing logic
         """
         # import hermes_eea
@@ -119,13 +128,15 @@ class FileProcessor:
         try:
             logger.info("File Processed Successfully: %s", self.file_key)
 
-        except:
+        except BaseException as exception:
             logger.error("Error when Processing File: %s", self.file_key)
+            raise exception
 
     def _process_merit_file(self):
         """
         This function processes files from the MERIT Instrument
-        The repo for this package can be found: https://github.com/HERMES-SOC/hermes_merit
+        The repo for this package can be found:
+        https://github.com/HERMES-SOC/hermes_merit
         TODO: Add processing logic
         """
         # import hermes_merit
@@ -133,5 +144,6 @@ class FileProcessor:
         try:
             logger.info("File Processed Successfully: %s", self.file_key)
 
-        except:
+        except BaseException as exception:
             logger.error("Error when Processing File: %s", self.file_key)
+            raise exception
