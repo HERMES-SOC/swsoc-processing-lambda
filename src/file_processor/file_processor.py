@@ -65,9 +65,12 @@ class FileProcessor:
             return True
 
         except BaseException as exception:
-            logger.error("Error when Processing File: %s Error: %s", self.file_key, exception)
+            logger.error(
+                "Error when Processing File: %s Error: %s",
+                self.file_key,
+                exception,
+            )
             return None
-
 
     def _log_status_in_dynamo_db(self):
         """
