@@ -14,11 +14,8 @@ class SDCAWSProcessingLambdaStack(Stack):
    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        repo_name = ''
-        with open('cdk.json') as json_file:
-            config = json.load(json_file)
-            repo_name = config['context']['assets-ecr-repository-name']
-
+        repo_name = 'sdc_aws_processing_function'
+        
         ecr_repository = aws_ecr.Repository(
                             self, 
                             id=f"{repo_name}_repo", 
