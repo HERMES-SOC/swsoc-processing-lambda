@@ -15,14 +15,20 @@ class SDCAWSProcessingLambdaStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
 
         repo_name = 'sdc_aws_processing_function'
-        
+
         ecr_repository = aws_ecr.Repository(
                             self, 
                             id=f"{repo_name}_repo", 
                             repository_name=repo_name,
                             )
-
-        os.system('ls -l')
+        
+        login_ecr_command = f"aws ecr get-login-password --region {os.getenv('CDK_DEFAULT_REGION')} | docker login --username AWS --password-stdin {ecr_repository.repository_uri}"
+        docker_build_command = f'cd function && docker build -t {repo_name}:latest .'
+        docker_tag_command = f"docker tag sdc_aws_processing_lambda:latest {ecr_repository.repository_uri}/sdc_aws_processing_lambda:latest"
+        # push_ecr_command = f""
+        # docker_tag_command = 
+        os.system(docker_build_command)
+        logging.warning(login_ecr_command)
         ### Create Cognito Remediator Lambda function
         sdc_aws_processing_function = aws_lambda.DockerImageFunction(
             scope=self,
