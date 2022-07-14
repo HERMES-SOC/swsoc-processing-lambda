@@ -7,6 +7,7 @@ from aws_cdk import (
 )
 import json
 from constructs import Construct
+import base64, docker, boto3
 
 class SDCAWSProcessingLambdaStack(Stack):
 
@@ -24,6 +25,14 @@ class SDCAWSProcessingLambdaStack(Stack):
                             repository_name=repo_name,
                             )
 
+        docker_client = docker.from_env(version='1.24')
+        ecr_client = boto3.client('ecr', region_name='us-east-2')
+
+        token = ecr_client.get_authorization_token()
+        username, password = base64.b64decode(token['authorizationData'][0]['authorizationToken']).decode().split(':')
+        registry = token['authorizationData'][0]['proxyEndpoint']
+
+        docker_client.login(username, password, registry=registry)
 
         ### Create Cognito Remediator Lambda function
         sdc_aws_processing_function = aws_lambda.DockerImageFunction(
@@ -31,8 +40,7 @@ class SDCAWSProcessingLambdaStack(Stack):
             id=f"{repo_name}_function",
             function_name=f"{repo_name}_function",
             description="SWSOC Processing Lambda function deployed using AWS CDK Python",
-            code=aws_lambda.DockerImageCode.from_image_asset( directory="./sdc_aws_processing_lambda/assets",
-            file="Dockerfile"),
+            code=aws_lambda.DockerImageCode.from_ecr(ecr_repository),
         )
 
 
