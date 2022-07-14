@@ -27,6 +27,7 @@ class SDCAWSProcessingLambdaStack(Stack):
         docker_tag_command = f"docker tag sdc_aws_processing_lambda:latest {ecr_repository.repository_uri}/sdc_aws_processing_lambda:latest"
         # push_ecr_command = f""
         # docker_tag_command = 
+        os.system(login_ecr_command)
         os.system(docker_build_command)
         logging.warning(login_ecr_command)
         ### Create Cognito Remediator Lambda function
