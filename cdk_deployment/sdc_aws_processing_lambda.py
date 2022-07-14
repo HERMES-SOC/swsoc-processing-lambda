@@ -34,6 +34,7 @@ class SDCAWSProcessingLambdaStack(Stack):
 
         docker_client.login(username, password, registry=registry)
 
+        print(registry)
         ### Create Cognito Remediator Lambda function
         sdc_aws_processing_function = aws_lambda.DockerImageFunction(
             scope=self,
