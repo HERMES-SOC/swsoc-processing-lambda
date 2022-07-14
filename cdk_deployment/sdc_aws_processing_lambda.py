@@ -8,7 +8,7 @@ from aws_cdk import (
 import json
 from constructs import Construct
 import base64, docker, boto3
-
+import logging
 class SDCAWSProcessingLambdaStack(Stack):
 
    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
@@ -33,7 +33,7 @@ class SDCAWSProcessingLambdaStack(Stack):
         registry = token['authorizationData'][0]['proxyEndpoint']
 
         docker_client.login(username, password, registry=registry)
-
+        logging.warning(token)
         print(registry)
         ### Create Cognito Remediator Lambda function
         sdc_aws_processing_function = aws_lambda.DockerImageFunction(
