@@ -32,6 +32,8 @@
       "aws",
       "aws-cn"
     ],
+    "@aws-cdk/core:enableStackNameDuplicates": "true",
+    "aws-cdk:enableDiffNoFail": "true",
     "assets-ecr-repository-name": "sdc_aws_processing_lambda" 
   }
 }
