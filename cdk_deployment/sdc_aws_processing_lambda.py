@@ -22,9 +22,9 @@ class SDCAWSProcessingLambdaStack(Stack):
                             repository_name=repo_name,
                             )
         
-        login_ecr_command = f"aws ecr get-login-password --region {os.getenv('CDK_DEFAULT_REGION')} | docker login --username AWS --password-stdin {ecr_repository.repository_uri}"
+        login_ecr_command = f"aws ecr get-login-password --region {os.getenv('CDK_DEFAULT_REGION')} | docker login --username AWS --password-stdin {ecr_repository.repository_uri_for_tag()}"
         docker_build_command = f'cd function && docker build -t {repo_name}:latest .'
-        docker_tag_command = f"docker tag sdc_aws_processing_lambda:latest {ecr_repository.repository_uri}/sdc_aws_processing_lambda:latest"
+        docker_tag_command = f"docker tag sdc_aws_processing_lambda:latest {ecr_repository.repository_uri_for_tag()}/sdc_aws_processing_lambda:latest"
         # push_ecr_command = f""
         # docker_tag_command = 
         os.system(login_ecr_command)
