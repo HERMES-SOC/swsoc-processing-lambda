@@ -11,7 +11,7 @@ class SDCAWSProcessingLambdaStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
         
         # ECR Repo Name
-        repo_name = 'sdc_aws_processing_function'
+        repo_name = 'sdc_aws_processing_lambda'
 
         # Get SDC Processing Lambda ECR Repo
         ecr_repository = aws_ecr.Repository.from_repository_name(
