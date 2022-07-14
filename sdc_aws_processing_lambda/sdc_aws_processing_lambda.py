@@ -24,10 +24,6 @@ class SDCAWSProcessingLambdaStack(Stack):
                             repository_name=repo_name,
                             )
 
-        docker_image_asset = aws_ecr_assets.DockerImageAsset(self, repo_name,
-            directory="./sdc_aws_processing_lambda/assets",
-            file="Dockerfile"
-            )
 
         ### Create Cognito Remediator Lambda function
         sdc_aws_processing_function = aws_lambda.DockerImageFunction(
@@ -35,7 +31,8 @@ class SDCAWSProcessingLambdaStack(Stack):
             id=f"{repo_name}_function",
             function_name=f"{repo_name}_function",
             description="SWSOC Processing Lambda function deployed using AWS CDK Python",
-            code=aws_lambda.DockerImageCode.from_ecr(ecr_repository),
+            code=aws_lambda.DockerImageCode.from_image_asset( directory="./sdc_aws_processing_lambda/assets",
+            file="Dockerfile"),
         )
 
 
