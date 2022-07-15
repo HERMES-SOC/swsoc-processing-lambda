@@ -17,6 +17,6 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install pytest pytest-astropy pytest-cov
     - name: Run tests
-      run: pytest --pyargs src --cov lambda_function/src
+      run: pytest --pyargs lambda_function --cov lambda_function
 
 
