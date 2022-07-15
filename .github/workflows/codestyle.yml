@@ -19,10 +19,10 @@ jobs:
     - name: Lint Function Code with Black
       run: |
         black --check --diff lambda_function
-    - name: Lint Function Code with Black
+    - name: Lint CDK Deployment Code with Black
       run: |
-        black --check --diff sdc_aws_processing_function/assets/src
+        black --check --diff cdk_deployment
     - name: Lint Function code with Flake
       run: |
-        flake8 --count sdc_aws_processing_function/assets/src
+        flake8 --count lambda_function
 

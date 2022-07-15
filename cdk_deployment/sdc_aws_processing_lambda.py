@@ -25,7 +25,9 @@ class SDCAWSProcessingLambdaStack(Stack):
             scope=self,
             id=f"{repo_name}_function",
             function_name=f"{repo_name}_function",
-            description="SWSOC Processing Lambda function deployed using AWS CDK Python",
+            description=(
+                "SWSOC Processing Lambda function deployed using AWS CDK Python"
+            ),
             code=aws_lambda.DockerImageCode.from_ecr(ecr_repository),
         )
 
