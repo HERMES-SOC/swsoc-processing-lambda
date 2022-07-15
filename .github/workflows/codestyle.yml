@@ -16,13 +16,10 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install flake8 black
-    - name: Lint Function Code with Black
+    - name: Lint  Code with Black
       run: |
-        black --check --diff lambda_function
-    - name: Lint CDK Deployment Code with Black
+        black --check --diff app.py lambda_function cdk_deployment
+    - name: Lint Code with Flake
       run: |
-        black --check --diff cdk_deployment
-    - name: Lint Function code with Flake
-      run: |
-        flake8 --count lambda_function
+        flake8 --count --max-line-length app.py lambda_function cdk_deployment
 
