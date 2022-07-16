@@ -10,14 +10,14 @@ class SDCAWSProcessingLambdaStack(Stack):
         # ECR Repo Name
         repo_name = "sdc_aws_processing_lambda"
 
-        ## Use existing ecr repo or create new one
+        # Use existing ecr repo or create new one
         try:
             logging.info("Using Existing %s repo", repo_name)
             # Get SDC Processing Lambda ECR Repo
             ecr_repository = aws_ecr.Repository.from_repository_name(
                 self, id=f"{repo_name}_repo", repository_name=repo_name
             )
-        except BaseException as error:  # In case security group with id: vars.SECURITY_GROUP_ID does not exist
+        except BaseException as error:
             logging.error("Error %s trying to get repo: %s", error, repo_name)
             # Get SDC Processing Lambda ECR Repo
             ecr_repository = aws_ecr.Repository(
