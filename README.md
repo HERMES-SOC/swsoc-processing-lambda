@@ -7,7 +7,7 @@
 
 ### **Description**:
 This repository is to define the image to be used for the SWSOC file processing Lambda function container. This container will be built and and stored in an ECR Repo. 
-The container will contain the latest release code as the production environment and the latest code on master as the development. Files with the appropriate naming convention will be handled in production while files prefixed with `dev_` will be handled using the development environment.
+The container will contain the latest release code as the production environment and the latest code on master as the development. Files with the appropriate naming convention will be handled in production while files prefixed with `dev_` will be handled using the development environment
 
 ### **Testing Locally**:
 1. Build the lambda container image you'd like to test: 
