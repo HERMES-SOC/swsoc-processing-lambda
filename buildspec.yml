@@ -33,5 +33,18 @@ phases:
       - export TAG=$(date +%Y-%m-%d-%H-%M-%S)
       - docker tag sdc_aws_processing_lambda:latest 351967858401.dkr.ecr.us-east-1.amazonaws.com/sdc_aws_processing_lambda:$(printenv TAG)
       - docker push 351967858401.dkr.ecr.us-east-1.amazonaws.com/sdc_aws_processing_lambda:$(printenv TAG)
+      - |
+      
+        echo "Docker Git Release Tag Script"
+        TRIGGER=$CODEBUILD_WEBHOOK_TRIGGER
+        if [[ $TRIGGER == *"branch/main"* ]];then
+          echo "Building using branch/main source, not tagging"
+        fi    
+        if [[ $TRIGGER == *"tag/"* ]];then
+          GIT_TAG=${TRIGGER:4}
+          echo "Building using tag release, tagging image with $TAG"
+          docker tag sdc_aws_processing_lambda:latest public.ecr.aws/w5r9l1c8/sdc_aws_processing_lambda:$(printenv GIT_TAG)
+          docker push public.ecr.aws/w5r9l1c8/sdc_aws_processing_lambda:$(printenv GIT_TAG)
+        fi    
       - cdk bootstrap -y --require-approval never
       - cdk deploy -y --require-approval never
