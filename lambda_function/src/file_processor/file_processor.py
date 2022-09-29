@@ -12,22 +12,23 @@ import botocore
 from datetime import date, datetime
 import time
 import logging
+import importlib
 
+MISSION_NAME = "hermes"
+INSTR_NAMES = ["eea", "nemisis", "merit", "spani"]
+MISSION_PKG = "hermes_core"
+INSTR_PKG = [f'{MISSION_NAME}_{this_instr}' for this_instr in INSTR_NAMES]
+INSTR_TO_BUCKET_NAME = {this_instr:f"{MISSION_NAME}-{this_instr}" for this_instr in INSTR_NAMES}
+INSTR_TO_PKG = dict(zip(INSTR_NAMES, INSTR_PKG))
 # The below flake exceptions are to avoid the hermes.log writing
 # issue the above line solves
 from hermes_core import log  # noqa: E402
-from hermes_core.util import util  # noqa: E402
+util = importlib.import_module(f"{MISSION_PKG}.util")  # noqa: E402
 
 # Starts boto3 session so it gets access to needed credentials
 session = boto3.Session()
 
 # Dict with instrument bucket names
-INSTRUMENT_BUCKET_NAMES = {
-    "eea": "hermes-eea",
-    "nemisis": "hermes-nemisis",
-    "merit": "hermes-merit",
-    "spani": "hermes-spani",
-}
 
 # To remove boto3 noisy debug logging
 logging.getLogger("botocore").setLevel(logging.CRITICAL)
@@ -99,44 +100,18 @@ class FileProcessor:
                 file_key_array = self.file_key.split("/")
                 parsed_file_key = file_key_array[-1]
                 science_file = util.parse_science_filename(parsed_file_key)
-
-                destination_bucket = INSTRUMENT_BUCKET_NAMES[science_file["instrument"]]
+                this_instr = science_file["instrument"]
+                destination_bucket = INSTR_TO_BUCKET_NAME[this_instr]
                 log.info(
                     f"Destination Bucket Parsed Successfully: {destination_bucket}"
                 )
 
-                instrument_calibration = ""
-
-                if destination_bucket == "hermes-eea":
-                    from hermes_eea.calibration import calibration
-
-                    log.info("Using hermes_eea module for calibration")
-                    instrument_calibration = calibration
-
-                elif destination_bucket == "hermes-nemisis":
-                    from hermes_nemisis.calibration import calibration
-
-                    log.info("Using hermes_nemisis module for calibration")
-                    instrument_calibration = calibration
-
-                elif destination_bucket == "hermes-merit":
-                    from hermes_merit.calibration import calibration
-
-                    log.info("Using hermes_merit module for calibration")
-                    instrument_calibration = calibration
-
-                elif destination_bucket == "hermes-spani":
-                    from hermes_spani.calibration import calibration
-
-                    log.info("Using hermes_spani module for calibration")
-                    instrument_calibration = calibration
-                else:
-                    log.error({"status": "ERROR", "message": "Instrument Not Found"})
-                    raise KeyError("Instrument Not Found")
+                calibration_module = importlib.import_module(f"{INSTR_TO_PKG[this_instr]}.calibration")
+                log.info(f"Using {INSTR_TO_PKG[this_instr]} module for calibration")
 
                 # Run Calibration on File (This will cause a ValueError
                 # if no calibration is found)
-                instrument_calibration.calibrate_file(parsed_file_key)
+                calibration_module.calibrate_file(parsed_file_key)
 
             except ValueError as e:
                 # Expected ValueError for Data Flow Test because no calibration
