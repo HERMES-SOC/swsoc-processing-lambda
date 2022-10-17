@@ -15,13 +15,15 @@ try:
         MISSION_NAME = vars["MISSION_NAME"]
         INSTR_NAMES = vars["INSTR_NAMES"]
         MISSION_PKG = vars["MISSION_PKG"]
-        
+
 except FileNotFoundError:
     print("vars.yaml not found. Check to make sure it exists in the root directory.")
     exit(1)
 
 
 # Initialize other constants after loading YAML file
-INSTR_PKG = [f'{MISSION_NAME}_{this_instr}' for this_instr in INSTR_NAMES]
-INSTR_TO_BUCKET_NAME = {this_instr:f"{MISSION_NAME}-{this_instr}" for this_instr in INSTR_NAMES}
+INSTR_PKG = [f"{MISSION_NAME}_{this_instr}" for this_instr in INSTR_NAMES]
+INSTR_TO_BUCKET_NAME = {
+    this_instr: f"{MISSION_NAME}-{this_instr}" for this_instr in INSTR_NAMES
+}
 INSTR_TO_PKG = dict(zip(INSTR_NAMES, INSTR_PKG))

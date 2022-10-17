@@ -16,8 +16,8 @@ from util import MISSION_PKG, INSTR_TO_BUCKET_NAME, INSTR_TO_PKG
 
 # Import logging and util from mission package
 mission_pkg = __import__(MISSION_PKG)
-log = getattr(mission_pkg, 'log')
-util = getattr(mission_pkg, 'util').util
+log = getattr(mission_pkg, "log")
+util = getattr(mission_pkg, "util").util
 
 # Starts boto3 session so it gets access to needed credentials
 session = boto3.Session()
@@ -99,7 +99,9 @@ class FileProcessor:
                 )
 
                 # Dynamically import instrument package
-                instr_pkg = __import__(f"{INSTR_TO_PKG[this_instr]}.calibration", fromlist=["calibration"])
+                instr_pkg = __import__(
+                    f"{INSTR_TO_PKG[this_instr]}.calibration", fromlist=["calibration"]
+                )
                 calibration = getattr(instr_pkg, "calibration")
 
                 log.info(f"Using {INSTR_TO_PKG[this_instr]} module for calibration")
