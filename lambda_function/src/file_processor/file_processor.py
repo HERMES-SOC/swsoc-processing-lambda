@@ -12,23 +12,15 @@ import botocore
 from datetime import date, datetime
 import time
 import logging
-import importlib
+from util import MISSION_PKG, INSTR_TO_BUCKET_NAME, INSTR_TO_PKG
 
-MISSION_NAME = "hermes"
-INSTR_NAMES = ["eea", "nemisis", "merit", "spani"]
-MISSION_PKG = "hermes_core"
-INSTR_PKG = [f'{MISSION_NAME}_{this_instr}' for this_instr in INSTR_NAMES]
-INSTR_TO_BUCKET_NAME = {this_instr:f"{MISSION_NAME}-{this_instr}" for this_instr in INSTR_NAMES}
-INSTR_TO_PKG = dict(zip(INSTR_NAMES, INSTR_PKG))
-# The below flake exceptions are to avoid the hermes.log writing
-# issue the above line solves
-from hermes_core import log  # noqa: E402
-util = importlib.import_module(f"{MISSION_PKG}.util")  # noqa: E402
+# Import logging and util from mission package
+mission_pkg = __import__(MISSION_PKG)
+log = getattr(mission_pkg, 'log')
+util = getattr(mission_pkg, 'util').util
 
 # Starts boto3 session so it gets access to needed credentials
 session = boto3.Session()
-
-# Dict with instrument bucket names
 
 # To remove boto3 noisy debug logging
 logging.getLogger("botocore").setLevel(logging.CRITICAL)
@@ -106,12 +98,15 @@ class FileProcessor:
                     f"Destination Bucket Parsed Successfully: {destination_bucket}"
                 )
 
-                calibration_module = importlib.import_module(f"{INSTR_TO_PKG[this_instr]}.calibration")
+                # Dynamically import instrument package
+                instr_pkg = __import__(f"{INSTR_TO_PKG[this_instr]}.calibration", fromlist=["calibration"])
+                calibration = getattr(instr_pkg, "calibration")
+
                 log.info(f"Using {INSTR_TO_PKG[this_instr]} module for calibration")
 
                 # Run Calibration on File (This will cause a ValueError
                 # if no calibration is found)
-                calibration_module.calibrate_file(parsed_file_key)
+                calibration.calibrate_file(parsed_file_key)
 
             except ValueError as e:
                 # Expected ValueError for Data Flow Test because no calibration
@@ -209,9 +204,8 @@ class FileProcessor:
         Function to extract next data level from file key
         """
         try:
-            datalevels = ["l0", "l1", "ql"]
-            current_level = datalevels.index(self._get_datalevel(file_key))
-            return datalevels[current_level + 1]
+            current_level = util.VALID_DATA_LEVELS.index(self._get_datalevel(file_key))
+            return util.VALID_DATA_LEVELS[current_level + 1]
         except IndexError as e:
             log.error({"status": "ERROR", "message": e})
             raise e

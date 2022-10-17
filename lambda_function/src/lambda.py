@@ -10,12 +10,14 @@ implemented and docstrings expanded
 import json
 import os
 import logging
-
+from util import MISSION_PKG
 # The below flake exceptions are to avoid the hermes.log writing
 # issue the above line solves
-from hermes_core import log  # noqa: E402
-
 from file_processor.file_processor import FileProcessor  # noqa: E402
+
+# Import logging from mission package
+mission_pkg = __import__(MISSION_PKG)
+log = getattr(mission_pkg, 'log')
 
 # To remove boto3 noisy debug logging
 logging.getLogger("botocore").setLevel(logging.CRITICAL)
