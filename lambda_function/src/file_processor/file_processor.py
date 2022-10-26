@@ -12,7 +12,38 @@ import botocore
 from datetime import date, datetime
 import time
 import logging
-from util import MISSION_PKG, INSTR_TO_BUCKET_NAME, INSTR_TO_PKG
+import yaml
+
+# Initialize constants to be parsed from config.yaml
+MISSION_NAME = ""
+INSTR_NAMES = []
+MISSION_PKG = ""
+
+# Read YAML file and parse variables
+try:
+    with open("./config.yaml", "r") as f:
+        config = yaml.safe_load(f)
+        print("config.yaml loaded successfully")
+        MISSION_NAME = config["MISSION_NAME"]
+        INSTR_NAMES = config["INSTR_NAMES"]
+        MISSION_PKG = config["MISSION_PKG"]
+
+except FileNotFoundError:
+    print("config.yaml not found. Check to make sure it exists in the root directory.")
+    exit(1)
+
+
+# Initialize other constants after loading YAML file
+INSTR_PKG = [f"{MISSION_NAME}_{this_instr}" for this_instr in INSTR_NAMES]
+INSTR_TO_BUCKET_NAME = {
+    this_instr: f"{MISSION_NAME}-{this_instr}" for this_instr in INSTR_NAMES
+}
+INSTR_TO_PKG = dict(zip(INSTR_NAMES, INSTR_PKG))
+
+
+# Import logging from mission package
+mission_pkg = __import__(MISSION_PKG)
+log = getattr(mission_pkg, "log")
 
 # Import logging and util from mission package
 mission_pkg = __import__(MISSION_PKG)
