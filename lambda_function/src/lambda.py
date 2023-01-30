@@ -39,8 +39,12 @@ def handler(event, context) -> dict:
         if environment is None:
             environment = "DEVELOPMENT"
 
-        for s3_event in event["Records"]:
+        # Parse message from SNS Notification
+        records = json.loads(event["Message"])["Records"]
 
+        for s3_event in records:
+
+            # Extract needed information from event
             s3_bucket = s3_event["s3"]["bucket"]["name"]
             file_key = s3_event["s3"]["object"]["key"]
 
