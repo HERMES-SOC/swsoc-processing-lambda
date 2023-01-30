@@ -188,11 +188,11 @@ class FileProcessor:
                             destination_bucket=destination_bucket,
                         )
 
-                except ValueError:
-                    log.info("No calibration performed")
+                except ValueError as e:
+                    log.info(e)
 
             except Exception as e:
-                log.error("Error Processing File")
+                log.error(f"Error Processing File: {e}")
                 raise e
 
     @staticmethod
