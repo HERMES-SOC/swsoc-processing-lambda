@@ -189,7 +189,7 @@ class FileProcessor:
                         )
 
                 except ValueError as e:
-                    log.info(e)
+                    log.error(e)
 
             except Exception as e:
                 log.error(f"Error Processing File: {e}")
