@@ -208,7 +208,11 @@ class FileProcessor:
                             self._send_slack_notification(
                                 slack_client=self.slack_client,
                                 slack_channel=self.slack_channel,
-                                slack_message=f"File ({new_file_key}) has been successfully processed and uploaded to {destination_bucket}.",
+                                slack_message=(
+                                    f"File ({new_file_key})"
+                                    " has been successfully processed and"
+                                    f"uploaded to {destination_bucket}.",
+                                ),
                             )
 
                         # Log to timeseries database
@@ -230,7 +234,11 @@ class FileProcessor:
                     self._send_slack_notification(
                         slack_client=self.slack_client,
                         slack_channel=self.slack_channel,
-                        slack_message=f"File ({new_file_key}) has been successfully processed and uploaded to {destination_bucket}.",
+                        slack_message=(
+                            f"File ({new_file_key}) has "
+                            "been successfully processed and "
+                            f"uploaded to {destination_bucket}.",
+                        ),
                         alert_type="error",
                     )
                 raise e
