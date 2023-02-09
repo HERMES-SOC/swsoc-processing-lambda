@@ -78,7 +78,6 @@ class FileProcessor:
     def __init__(
         self, s3_bucket: str, file_key: str, environment: str, dry_run: str = None
     ) -> None:
-
         # Initialize Class Variables
         try:
             self.instrument_bucket_name = s3_bucket
@@ -160,7 +159,6 @@ class FileProcessor:
             or self.dry_run
         ):
             try:
-
                 # Parse file key to get instrument name
                 file_key_array = self.file_key.split("/")
                 parsed_file_key = file_key_array[-1]
@@ -200,7 +198,6 @@ class FileProcessor:
 
                     # Upload file to destination bucket if not a dry run
                     if not self.dry_run:
-
                         # Upload file to destination bucket
                         self._upload_file(
                             new_file_path, destination_bucket, new_file_key
