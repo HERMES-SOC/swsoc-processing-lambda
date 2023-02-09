@@ -228,6 +228,14 @@ class FileProcessor:
 
             except Exception as e:
                 log.error(f"Error Processing File: {e}")
+                if self.slack_client:
+                    # Send Slack Notification
+                    self._send_slack_notification(
+                        slack_client=self.slack_client,
+                        slack_channel=self.slack_channel,
+                        slack_message=f"File ({new_file_key}) has been successfully processed and uploaded to {destination_bucket}.",
+                        alert_type="error"
+                    )
                 raise e
 
     @staticmethod
