@@ -72,7 +72,6 @@ def create_s3_file_key(science_file_parser: Callable, old_file_key: str) -> str:
     """
     try:
         science_file = science_file_parser(old_file_key)
-        print(science_file)
         reference_timestamp = datetime.strptime(
             science_file["time"].value, "%Y-%m-%dT%H:%M:%S.%f"
         )
@@ -133,14 +132,12 @@ def download_file_from_s3(
     try:
         # Initialize S3 Client
         log.info(f"Downloading file {parsed_file_key} from {source_bucket}")
-        print(f"Downloading file {file_key} from {source_bucket}")
 
         # Download file to tmp directory
         s3_client.download_file(source_bucket, file_key, f"/tmp/{parsed_file_key}")
 
         log.debug(f"File {file_key} Successfully Downloaded")
 
-        print(os.listdir("/tmp"))
         return Path(f"/tmp/{parsed_file_key}")
 
     except botocore.exceptions.ClientError as e:
