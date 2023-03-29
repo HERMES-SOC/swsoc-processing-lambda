@@ -44,6 +44,20 @@ class FileProcessor:
     :type environment: str
     :param dry_run: Whether or not the FileProcessor is performing a dry run
     :type dry_run: bool
+    :param s3_client: The boto3 s3 client to use
+    :type s3_client: boto3.client
+    :param timestream_client: The boto3 timestream client to use
+    :type timestream_client: boto3.client
+    :param db_host: The database host to use
+    :type db_host: str
+    :param slack_token: The Slack token to use
+    :type slack_token: str
+    :param slack_channel: The Slack channel to use
+    :type slack_channel: str
+    :param slack_retries: The number of times to retry sending a Slack notification
+    :type slack_retries: int
+    :param slack_retry_delay: The number of seconds to wait between Slack retries
+    :type slack_retry_delay: int
     """
 
     def __init__(
@@ -129,8 +143,7 @@ class FileProcessor:
 
     def _process_file(self) -> None:
         """
-        This method serves as the main entry point for the FileProcessor class.
-        It will then determine which instrument library to use to process the file.
+        Serve as the main entry point for the FileProcessor class.
 
         :return: None
         :rtype: None
@@ -175,16 +188,14 @@ class FileProcessor:
                     f"{INSTR_TO_PKG[this_instr]}.calibration",
                     fromlist=["calibration"],
                 )
-                calibration = getattr(instr_pkg, "calibration")
+                calibration = instr_pkg.calibration
 
                 log.info(f"Using {INSTR_TO_PKG[this_instr]} module for calibration")
 
                 # Process file
                 try:
                     # Get name of new file
-                    print(file_path)
                     new_file_path = calibration.process_file(file_path)[0].name
-                    print(new_file_path)
                     # Get new file key
                     new_file_key = create_s3_file_key(parser, new_file_path)
 
