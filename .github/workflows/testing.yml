@@ -25,4 +25,4 @@ jobs:
     - name: Run tests
       run: |
         source venv/bin/activate
-        pytest -s tests --cov=lambda_function/ --cov-report=term --log-cli-level=INFO
+        pytest tests --cov=lambda_function/ --cov-report=term --log-cli-level=INFO

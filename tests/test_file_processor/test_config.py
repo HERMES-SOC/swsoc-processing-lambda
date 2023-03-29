@@ -31,7 +31,7 @@ def test_read_config_file():
 
     # Check INSTR_TO_PKG
     expected_instr_to_pkg = dict(
-        zip(expected_config["INSTR_NAMES"], expected_instr_pkg, strict=False)
+        zip(expected_config["INSTR_NAMES"], expected_instr_pkg)
     )
     assert config.INSTR_TO_PKG == expected_instr_to_pkg
 

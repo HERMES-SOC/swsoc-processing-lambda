@@ -4,6 +4,8 @@ phases:
   pre_build:
     commands:
       - echo Installing CI/CD Dependencies...
+      - python -m venv venv
+      - source venv/bin/activate
       - pip3 install --upgrade pip setuptools wheel
       - pip3 install -r requirements.txt
       - echo ________________________________
