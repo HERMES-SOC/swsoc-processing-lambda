@@ -1,5 +1,15 @@
-pytest
-pytest-astropy 
-pytest-cov
-flake8 
-black
+hermes_spani @ git+https://github.com/HERMES-SOC/hermes_spani.git
+hermes_eea @ git+https://github.com/HERMES-SOC/hermes_eea.git
+hermes_nemisis @ git+https://github.com/HERMES-SOC/hermes_nemisis.git
+hermes_merit @ git+https://github.com/HERMES-SOC/hermes_merit.git
+cdftracker @ git+https://github.com/HERMES-SOC/CDFTracker.git
+moto==4.1.6
+astropy==5.1.1
+pytest==7.2.2
+pytest-astropy==0.10.0
+pytest-cov==4.0.0
+psycopg==3.1.8
+flake8==6.0.0
+black==23.1.0
+slack_sdk==3.19.5
+slack-bolt==1.17.0
