@@ -11,8 +11,8 @@ from cdftracker.database import create_engine
 from cdftracker.database.tables import create_tables
 from cdftracker.tracker import tracker
 
-from lambda_function import log
-from lambda_function.file_processor.util import (
+from sdc_aws_utils.logging import log
+from sdc_aws_utils.aws import (
     create_s3_client_session,
     create_timestream_client_session,
     download_file_from_s3,
@@ -21,10 +21,9 @@ from lambda_function.file_processor.util import (
     log_to_timestream,
     object_exists,
     create_s3_file_key,
-    get_slack_client,
-    send_slack_notification,
 )
-from lambda_function.file_processor.config import (
+from sdc_aws_utils.slack import get_slack_client, send_slack_notification
+from sdc_aws_utils.config import (
     parser,
     INSTR_TO_BUCKET_NAME,
     INSTR_TO_PKG,

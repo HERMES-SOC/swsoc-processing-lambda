@@ -79,5 +79,3 @@ def test_file_processor(s3_client, timestream_client):
         )
 
         assert file_processor is not None
-
-    # Test FileProcessor with slack token
