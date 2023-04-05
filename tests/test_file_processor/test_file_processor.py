@@ -45,6 +45,42 @@ def timestream_client(aws_credentials):
         yield conn
 
 
+def test_dry_file_processor(s3_client, timestream_client):
+    for file in TEST_FILES:
+        # # Upload test file to mock S3
+        # for file in TEST_FILES:
+        s3_client.put_object(Bucket=TEST_BUCKET, Key=file, Body="Sample data")
+
+        # Set up the database and table
+        try:
+            timestream_client.create_database(DatabaseName="sdc_aws_logs")
+        except timestream_client.exceptions.ConflictException:
+            pass
+
+        try:
+            timestream_client.create_table(
+                DatabaseName="sdc_aws_logs", TableName="sdc_aws_s3_bucket_log_table"
+            )
+        except timestream_client.exceptions.ConflictException:
+            pass
+
+        # Test FileProcessor with
+        file_processor = FileProcessor(
+            TEST_BUCKET,
+            file,
+            dry_run=True,
+            timestream_client=timestream_client,
+            s3_client=s3_client,
+            db_host=DB_HOST,
+            slack_token="test-token",
+            slack_channel="test-channel",
+            slack_retries=0,
+            slack_retry_delay=0,
+        )
+
+        assert file_processor is not None
+
+
 def test_file_processor(s3_client, timestream_client):
     for file in TEST_FILES:
         # # Upload test file to mock S3
@@ -79,3 +115,40 @@ def test_file_processor(s3_client, timestream_client):
         )
 
         assert file_processor is not None
+
+
+def test_file_processor_failure(s3_client, timestream_client):
+    # # Upload test file to mock S3
+    # for file in TEST_FILES:
+    s3_client.put_object(Bucket=TEST_BUCKET, Key=TEST_BAD_FILE, Body="Sample data")
+
+    # Set up the database and table
+    try:
+        timestream_client.create_database(DatabaseName="sdc_aws_logs")
+    except timestream_client.exceptions.ConflictException:
+        pass
+
+    try:
+        timestream_client.create_table(
+            DatabaseName="sdc_aws_logs", TableName="sdc_aws_s3_bucket_log_table"
+        )
+    except timestream_client.exceptions.ConflictException:
+        pass
+
+    # Test FileProcessor with
+    try:
+        file_processor = FileProcessor(
+            TEST_BUCKET,
+            TEST_BAD_FILE,
+            dry_run=False,
+            timestream_client=timestream_client,
+            s3_client=s3_client,
+            db_host=DB_HOST,
+            slack_token="test-token",
+            slack_channel="test-channel",
+            slack_retries=0,
+            slack_retry_delay=0,
+        )
+
+    except ValueError as e:
+        assert e is not None

@@ -1,7 +1,7 @@
 """
-This Module contains the FileProcessor class that will distinguish
-the appropriate HERMES intrument library to use when processing
-the file based off which bucket the file is located in.
+This module contains the FileProcessor class that will distinguish
+the appropriate HERMES instrument library to use when processing
+the file based on which bucket the file is located in.
 """
 
 import os
@@ -32,8 +32,7 @@ from sdc_aws_utils.config import (
 
 class FileProcessor:
     """
-    The FileProcessor class will then determine which instrument
-    library to use to process the file.
+    The FileProcessor class determines which instrument library to use to process the file.
 
     :param s3_bucket: The name of the S3 bucket the file is located in
     :type s3_bucket: str
@@ -72,22 +71,25 @@ class FileProcessor:
         slack_retries: int = 3,
         slack_retry_delay: int = 5,
     ) -> None:
-        # Set dbhost to None
-        if db_host is None:
-            # Get DBHOST from environment variables
-            db_host = os.getenv("SDC_AWS_DBHOST")
+        self.db_host = db_host or os.getenv("SDC_AWS_DBHOST")
+        self.slack_token = slack_token or os.getenv("SDC_AWS_SLACK_TOKEN")
+        self.slack_channel = slack_channel or os.getenv("SDC_AWS_SLACK_CHANNEL")
 
-        if slack_token is None:
-            # Get Slack Token from environment variables
-            self.slack_token = os.getenv("SDC_AWS_SLACK_TOKEN")
-        else:
-            self.slack_token = slack_token
+        self.slack_client = (
+            get_slack_client(self.slack_token)
+            if self.slack_token and self.slack_channel
+            else None
+        )
 
-        if slack_channel is None:
-            # Get Slack Channel from environment variables
-            self.slack_channel = os.getenv("SDC_AWS_SLACK_CHANNEL")
+        self.slack_retries = slack_retries
+        self.slack_retry_delay = slack_retry_delay
+
+        if self.db_host:
+            engine = create_engine(self.db_host)
+            create_tables(engine)
+            self.tracker = tracker.CDFTracker(engine, parser)
         else:
-            self.slack_channel = slack_channel
+            self.tracker = None
 
         if self.slack_token is not None and self.slack_channel is not None:
             # Initialize Slack Client
@@ -114,30 +116,15 @@ class FileProcessor:
             # Set tracker to None
             self.tracker = None
 
-        # Set File Key
         self.file_key = file_key
-
-        # Set Instrument Bucket Name
         self.instrument_bucket_name = s3_bucket
-
-        # Initialize timestream write client
-        if timestream_client is not None:
-            self.timestream_client = timestream_client
-        else:
-            self.timestream_client = create_timestream_client_session()
-
-        # Initialize S3 client
-        if s3_client is not None:
-            self.s3_client = s3_client
-        else:
-            self.s3_client = create_s3_client_session()
-
-        # Variable that determines if FileProcessor performs a Dry Run
+        self.timestream_client = timestream_client or create_timestream_client_session()
+        self.s3_client = s3_client or create_s3_client_session()
         self.dry_run = dry_run
+
         if self.dry_run:
             log.warning("Performing Dry Run - Files will not be copied/removed")
 
-        # Process File
         self._process_file()
 
     def _process_file(self) -> None:
@@ -193,13 +180,13 @@ class FileProcessor:
 
                 # Process file
                 try:
-                    # Get name of new file
-                    new_file_path = calibration.process_file(file_path)[0].name
-                    # Get new file key
-                    new_file_key = create_s3_file_key(parser, new_file_path)
-
                     # Upload file to destination bucket if not a dry run
                     if not self.dry_run:
+                        # Get name of new file
+                        new_file_path = calibration.process_file(file_path)[0].name
+                        # Get new file key
+                        new_file_key = create_s3_file_key(parser, new_file_path)
+
                         # Upload file to destination bucket
                         path = upload_file_to_s3(
                             self.s3_client,
@@ -245,10 +232,7 @@ class FileProcessor:
                     send_slack_notification(
                         slack_client=self.slack_client,
                         slack_channel=self.slack_channel,
-                        slack_message=(
-                            f"Error Processing File ({new_file_path})"
-                            f"from {destination_bucket}.",
-                        ),
+                        slack_message=(f"Error Processing File ({self.file_key})"),
                         alert_type="error",
                         slack_max_retries=self.slack_retries,
                         slack_retry_delay=self.slack_retry_delay,
