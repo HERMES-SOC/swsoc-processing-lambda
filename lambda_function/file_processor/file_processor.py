@@ -197,30 +197,33 @@ class FileProcessor:
                         if self.tracker:
                             self.tracker.track(path)
 
-                        if self.slack_client:
-                            # Send Slack Notification
-                            send_slack_notification(
-                                slack_client=self.slack_client,
-                                slack_channel=self.slack_channel,
-                                slack_message=(
-                                    f"File ({new_file_path}) has "
-                                    "been successfully processed and "
-                                    f"uploaded to {destination_bucket}.",
-                                ),
-                                alert_type="success",
-                                slack_max_retries=self.slack_retries,
-                                slack_retry_delay=self.slack_retry_delay,
-                            )
-
-                        # Log to timeseries database
-                        log_to_timestream(
-                            self.timestream_client,
-                            action_type="PUT",
-                            file_key=self.file_key,
-                            new_file_key=new_file_key,
-                            source_bucket=destination_bucket,
-                            destination_bucket=destination_bucket,
-                        )
+                        try:
+                            if self.slack_client:
+                                # Send Slack Notification
+                                send_slack_notification(
+                                    slack_client=self.slack_client,
+                                    slack_channel=self.slack_channel,
+                                    slack_message=(
+                                        f"File ({new_file_path}) has "
+                                        "been successfully processed and "
+                                        f"uploaded to {destination_bucket}.",
+                                    ),
+                                    alert_type="success",
+                                    slack_max_retries=self.slack_retries,
+                                    slack_retry_delay=self.slack_retry_delay,
+                                )
+                            if self.timestream_client:
+                                # Log to timeseries database
+                                log_to_timestream(
+                                    self.timestream_client,
+                                    action_type="PUT",
+                                    file_key=self.file_key,
+                                    new_file_key=new_file_key,
+                                    source_bucket=destination_bucket,
+                                    destination_bucket=destination_bucket,
+                                )
+                        except Exception as e:
+                            log.error(f"Error Occurred: {e}")
 
                 except ValueError as e:
                     log.error(e)
