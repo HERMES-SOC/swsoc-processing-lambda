@@ -214,10 +214,12 @@ def log_to_timestream(
         if not source_bucket and not destination_bucket:
             raise ValueError("A Source or Destination Buckets is required")
 
+        prefix = "" if os.getenv("LAMBDA_ENVIRONMENT") == "PRODUCTION" else "dev-"
+
         # Write to Timestream
         timesteam_client.write_records(
-            DatabaseName="sdc_aws_logs",
-            TableName="sdc_aws_s3_bucket_log_table",
+            DatabaseName=f"{prefix}sdc_aws_logs",
+            TableName=f"{prefix}sdc_aws_s3_bucket_log_table",
             Records=[
                 {
                     "Time": CURRENT_TIME,

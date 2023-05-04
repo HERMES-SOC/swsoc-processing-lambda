@@ -34,7 +34,9 @@ def handler_function(event, context) -> dict:
     """
     # Extract needed information from event
     try:
-        # Check if SNS or S3 event
+        # Check if SNS or S3 event and parse accordingly
+
+        # Parse SNS event
         records = json.loads(event["Records"][0]["Sns"]["Message"])["Records"]
 
         # Parse message from SNS Notification
