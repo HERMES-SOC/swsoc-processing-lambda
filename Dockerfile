@@ -9,7 +9,7 @@ COPY requirements.txt ${ROOT}
 
 # Update pip and install setuptools & Install requirements
 RUN pip install --no-cache-dir --upgrade pip setuptools && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir --upgrade -r requirements.txt
 
 # Install libpq
 RUN apt-get update && \
