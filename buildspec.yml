@@ -27,6 +27,14 @@ phases:
       - echo Login to Private ECR $REGION
       - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin 351967858401.dkr.ecr.$REGION.amazonaws.com
       - echo ________________________________
+      - ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
+      - if [ "$CODEBUILD_WEBHOOK_EVENT" = "PUSH" ]; then
+          ECR_REPO="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/dev_sdc_aws_processing_lambda"
+          CDK_ENVIRONMENT=DEVELOPMENT
+        else
+          ECR_REPO="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/sdc_aws_processing_lambda"
+          CDK_ENVIRONMENT=DEVELOPMENT
+        fi
       
       - VERSION=$(echo $CODEBUILD_WEBHOOK_HEAD_REF | grep -oP 'refs/tags/\K.*')
       - if [ -z "$VERSION" ]; then
@@ -37,18 +45,18 @@ phases:
       - echo ________________________________
 
       - echo Build Docker Image
-      - docker build -t 351967858401.dkr.ecr.$REGION.amazonaws.com/sdc_aws_processing_lambda:latest .
-      
+      - docker build -t $ECR_REPO:latest .
+
       - echo Tagging Docker Image...
-      - docker tag 351967858401.dkr.ecr.$REGION.amazonaws.com/sdc_aws_processing_lambda:latest 351967858401.dkr.ecr.$REGION.amazonaws.com/sdc_aws_processing_lambda:$VERSION
+      - docker tag $ECR_REPO:latest $ECR_REPO:$VERSION
 
       - echo Pushing the Docker image with Tags...
-      - docker push 351967858401.dkr.ecr.$REGION.amazonaws.com/sdc_aws_processing_lambda:latest
-      - docker push 351967858401.dkr.ecr.$REGION.amazonaws.com/sdc_aws_processing_lambda:$VERSION
+      - docker push $ECR_REPO:latest
+      - docker push $ECR_REPO:$VERSION
       - echo ________________________________
-      
+
       - echo Updating Deployment
-      - aws codebuild start-build --project-name build_sdc_aws_pipeline_architecture --region us-east-2 --environment-variables-override name=LAMBDA_PIPELINE,value=PROCESSING,type=PLAINTEXT name=TAG,value=$VERSION,type=PLAINTEXT
+      - aws codebuild start-build --project-name build_sdc_aws_pipeline_architecture --region us-east-2 --environment-variables-override name=LAMBDA_PIPELINE,value=PROCESSING,type=PLAINTEXT name=TAG,value=$VERSION,type=PLAINTEXT, name=CDK_ENVIRONMENT,value=$CDK_ENVIRONMENT,type=PLAINTEXT
       - echo ________________________________
 
   post_build:

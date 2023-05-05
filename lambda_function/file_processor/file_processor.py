@@ -194,6 +194,12 @@ class FileProcessor:
 
                 # Process file
                 try:
+                    prefix = (
+                        ""
+                        if os.getenv("LAMBDA_ENVIRONMENT") == "PRODUCTION"
+                        else "dev-"
+                    )
+                    destination_bucket = f"{prefix}{destination_bucket}"
                     # Get name of new file
                     new_file_path = calibration.process_file(file_path)[0].name
                     # Get new file key
