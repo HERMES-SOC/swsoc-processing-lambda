@@ -23,29 +23,33 @@ phases:
     
   build:
     commands:
-      - REGION=us-east-1
-      - echo Login to Private ECR $REGION
-      - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin 351967858401.dkr.ecr.$REGION.amazonaws.com
-      - echo ________________________________
-      - ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
-      - if [ "$CODEBUILD_WEBHOOK_EVENT" = "PUSH" ]; then
-          ECR_REPO="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/dev_sdc_aws_processing_lambda"
-          CDK_ENVIRONMENT=DEVELOPMENT
-        else
-          ECR_REPO="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/sdc_aws_processing_lambda"
-          CDK_ENVIRONMENT=DEVELOPMENT
-        fi
-      
-      - VERSION=$(echo $CODEBUILD_WEBHOOK_HEAD_REF | grep -oP 'refs/tags/\K.*')
-      - if [ -z "$VERSION" ]; then
-          VERSION=$(date +%Y-%m-%d-%H-%M-%S)
-        else
-          echo "Release version: $VERSION"
-        fi
-      - echo ________________________________
+    - REGION=us-east-1
+    - echo Login to Private ECR $REGION
+    - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin 351967858401.dkr.ecr.$REGION.amazonaws.com
+    - echo ________________________________
+    - ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
 
+    - |
+      if git describe --tags --exact-match > /dev/null 2>&1; then
+        echo "This is a tag push event"
+        ECR_REPO="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/sdc_aws_processing_lambda"
+        CDK_ENVIRONMENT=PRODUCTION
+        VERSION=`git describe --tags --exact-match`
+      elif [[ "${CDK_ENVIRONMENT}" == "PRODUCTION" ]]; then
+        echo "This is a production environment"
+        ECR_REPO="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/sdc_aws_processing_lambda"
+        CDK_ENVIRONMENT=PRODUCTION
+        VERSION=`date -u +"%Y%m%d%H%M%S"`
+      else
+        echo "This is a development environment"
+        ECR_REPO="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/dev_sdc_aws_processing_lambda"
+        CDK_ENVIRONMENT=DEVELOPMENT
+        VERSION=`date -u +"%Y%m%d%H%M%S"`
+      fi
+      - echo ________________________________
       - echo Build Docker Image
-      - docker build -t $ECR_REPO:latest .
+      - docker build --build-arg BASE_IMAGE=$PUBLIC_ECR_REPO -t $ECR_REPO:latest .
+
 
       - echo Tagging Docker Image...
       - docker tag $ECR_REPO:latest $ECR_REPO:$VERSION

@@ -1,5 +1,7 @@
 # Repo where this image's Dockerfile is maintained: https://github.com/HERMES-SOC/docker-lambda-base
-FROM public.ecr.aws/w5r9l1c8/swsoc-docker-lambda-base:latest
+ARG IMAGE_TAG=latest
+ARG IMAGE_NAME=dev-swsoc-docker-lambda-base
+FROM public.ecr.aws/w5r9l1c8/${IMAGE_NAME}:${IMAGE_TAG}
 
 # Working Directory Arguments
 ARG ROOT="/"
