@@ -48,7 +48,7 @@ phases:
       fi
       - echo ________________________________
       - echo Build Docker Image
-      - docker build --build-arg BASE_IMAGE=$PUBLIC_ECR_REPO -t $ECR_REPO:latest .
+      - docker build --build-arg PUBLIC_ECR_REPO=$PUBLIC_ECR_REPO -t $ECR_REPO:latest .
 
 
       - echo Tagging Docker Image...
