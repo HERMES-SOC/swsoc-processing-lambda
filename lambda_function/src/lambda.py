@@ -9,7 +9,8 @@ from file_processor import file_processor
 
 def handler(event, context) -> dict:
     """
-    This is the lambda handler function that acts as a proxy to the main function handle_event
+    This is the lambda handler function that acts as a proxy
+    to the main function handle_event
 
     :param event: Event data passed from the lambda trigger
     :type event: dict
