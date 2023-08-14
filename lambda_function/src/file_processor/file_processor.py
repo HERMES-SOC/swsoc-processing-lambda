@@ -240,25 +240,41 @@ class FileProcessor:
                             filename=new_file_path,
                             file_key=new_file_key,
                         )
-
-                        if self.slack_client:
-                            # Send Slack Notification
-                            send_pipeline_notification(
-                                slack_client=self.slack_client,
-                                slack_channel=self.slack_channel,
-                                path=new_file_path,
-                                alert_type="processed",
+                        try:
+                            if self.slack_client:
+                                # Send Slack Notification
+                                send_pipeline_notification(
+                                    slack_client=self.slack_client,
+                                    slack_channel=self.slack_channel,
+                                    path=new_file_path,
+                                    alert_type="processed",
+                                )
+                        except Exception as e:
+                            log.error(
+                                {
+                                    "status": "ERROR",
+                                    "message": f"Error when logging to Slack: {e}",
+                                }
                             )
-                        if self.timestream_client:
-                            # Log to timeseries database
-                            log_to_timestream(
-                                timestream_client=self.timestream_client,
-                                action_type="PUT",
-                                file_key=self.file_key,
-                                new_file_key=new_file_key,
-                                source_bucket=destination_bucket,
-                                destination_bucket=destination_bucket,
-                                environment=self.environment,
+
+                        try:
+                            if self.timestream_client:
+                                # Log to timeseries database
+                                log_to_timestream(
+                                    timestream_client=self.timestream_client,
+                                    action_type="PUT",
+                                    file_key=self.file_key,
+                                    new_file_key=new_file_key,
+                                    source_bucket=destination_bucket,
+                                    destination_bucket=destination_bucket,
+                                    environment=self.environment,
+                                )
+                        except Exception as e:
+                            log.error(
+                                {
+                                    "status": "ERROR",
+                                    "message": f"Error when logging to Timestream: {e}",
+                                }
                             )
 
                 except ValueError as e:
