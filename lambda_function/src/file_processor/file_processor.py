@@ -182,7 +182,10 @@ class FileProcessor:
                 client = session.client(service_name="secretsmanager")
                 response = client.get_secret_value(SecretId=secret_arn)
                 secret = json.loads(response["SecretString"])
-                connection_string = f"postgresql://{secret['username']}:{secret['password']}@{secret['host']}:{secret['port']}/{secret['dbname']}"
+                connection_string = (
+                    f"postgresql://{secret['username']}:{secret['password']}@"
+                    f"{secret['host']}:{secret['port']}/{secret['dbname']}"
+                )
                 # Initialize the database engine
                 self.database_engine = create_engine(connection_string)
                 # Setup the database tables if they do not exist
