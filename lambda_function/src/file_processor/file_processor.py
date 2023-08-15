@@ -261,11 +261,12 @@ class FileProcessor:
                 # Process file
                 try:
                     # Get name of new file
-                    new_file_path = calibration.process_file(file_path)[0].name
+                    new_file_path = calibration.process_file(file_path)[0]
+                    new_file_pathname = new_file_path.name
 
                     # Get new file key
                     new_file_key = create_s3_file_key(
-                        science_filename_parser, new_file_path
+                        science_filename_parser, new_file_pathname
                     )
 
                     # Upload file to destination bucket if not a dry run
@@ -274,22 +275,20 @@ class FileProcessor:
                         upload_file_to_s3(
                             s3_client=self.s3_client,
                             destination_bucket=destination_bucket,
-                            filename=new_file_path,
+                            filename=new_file_pathname,
                             file_key=new_file_key,
                         )
 
                         if self.tracker:
                             # Track file in CDF
-                            self.tracker.track(
-                                Path(calibration.process_file(file_path)[0])
-                            )
+                            self.tracker.track(Path(new_file_path))
 
                         if self.slack_client:
                             # Send Slack Notification
                             send_pipeline_notification(
                                 slack_client=self.slack_client,
                                 slack_channel=self.slack_channel,
-                                path=new_file_path,
+                                path=new_file_pathname,
                                 alert_type="processed",
                             )
 
