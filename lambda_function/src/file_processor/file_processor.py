@@ -260,8 +260,23 @@ class FileProcessor:
 
                 # Process file
                 try:
+                    # Convert Physical File Format to Logical File Format
+                    hermes_data, support_data = calibration.pre_process_file(
+                        file_path, support_path=None
+                    )
+
+                    # Process the loaded data for calibration or analysis
+                    hermes_data, extra_data = calibration.process_file(
+                        data=hermes_data, support_data=support_data
+                    )
+
+                    # Convert the Logical File Format to a Physical File Format
+                    data_files, extra_files = calibration.post_process_file(
+                        data=hermes_data, extra_data=extra_data
+                    )
+
                     # Get name of new file
-                    new_file_path = calibration.process_file(file_path)[0]
+                    new_file_path = data_files[0]
                     new_file_pathname = new_file_path.name
 
                     # Get new file key
