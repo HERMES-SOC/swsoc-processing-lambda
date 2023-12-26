@@ -37,7 +37,7 @@ jobs:
         docker cp $container_id:/test_data/. processed_files/
 
     - name: Upload Processed Files as Artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: processed-files
         path: processed_files/
