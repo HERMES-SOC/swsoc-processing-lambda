@@ -204,6 +204,8 @@ class FileProcessor:
                 for test_data_file in test_data_files:
                     if test_data_file.suffix in [".bin", ".cdf"]:
                         log.info(f"Calibrating {test_data_file}")
+                        # Make /test_data directory if it doesn't exist
+                        Path("/test_data").mkdir(parents=True, exist_ok=True)
                         # Copy file to /test_data directory using shutil
                         test_data_file_path = Path(test_data_file)
                         file_path = Path(f"/test_data/{test_data_file_path.name}")
