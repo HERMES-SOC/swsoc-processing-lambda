@@ -3,35 +3,26 @@ This Module contains the FileProcessor class that will distinguish
 the appropriate HERMES intrument library to use when processing
 the file based off which bucket the file is located in.
 """
-# import boto3
-# import botocore
+
 import os
 import json
 from pathlib import Path
+import shutil
 
-# from slack_sdk.errors import SlackApiError
 
 from sdc_aws_utils.logging import log, configure_logger
 from sdc_aws_utils.config import (
-    # TSD_REGION,
     INSTR_TO_PKG,
     parser as science_filename_parser,
     get_instrument_bucket,
 )
 from sdc_aws_utils.aws import (
     create_s3_client_session,
-    # create_timestream_client_session,
     object_exists,
     download_file_from_s3,
     upload_file_to_s3,
-    # log_to_timestream,
     create_s3_file_key,
 )
-
-# from sdc_aws_utils.slack import get_slack_client, send_pipeline_notification
-# from cdftracker.database import create_engine
-# from cdftracker.database.tables import create_tables
-# from cdftracker.tracker import tracker
 
 # Configure logger
 configure_logger()
@@ -94,41 +85,15 @@ class FileProcessor:
         self, s3_bucket: str, file_key: str, environment: str, dry_run: str = None
     ) -> None:
         # Initialize Class Variables
-        try:
-            self.instrument_bucket_name = s3_bucket
-            log.info(
-                "Instrument Bucket Name Parsed Successfully:"
-                f"{self.instrument_bucket_name}"
-            )
+        self.instrument_bucket_name = s3_bucket
 
-        except KeyError:
-            error_message = "KeyError when extracting S3 Bucket Name"
-            log.error({"status": "ERROR", "message": error_message})
-            raise KeyError(error_message)
-
-        try:
-            self.file_key = file_key
-
-            log.info(
-                {
-                    "status": "INFO",
-                    "message": "Incoming Object Name"
-                    f"Parsed Successfully: {self.file_key}",
-                }
-            )
-
-        except KeyError:
-            error_message = "KeyError when extracting S3 File Key"
-            log.error({"status": "ERROR", "message": error_message})
-            raise KeyError(error_message)
+        self.file_key = file_key
 
         # Variable that determines environment
         self.environment = environment
 
         # Variable that determines if FileProcessor performs a Dry Run
         self.dry_run = dry_run
-        if self.dry_run:
-            log.warning("Performing Dry Run - Files will not be copied/removed")
 
         # Process File
         self._process_file()
@@ -141,6 +106,16 @@ class FileProcessor:
         :return: None
         :rtype: None
         """
+        log.debug(
+            {
+                "status": "DEBUG",
+                "message": "Processing File",
+                "instrument_bucket_name": self.instrument_bucket_name,
+                "file_key": self.file_key,
+                "environment": self.environment,
+                "dry_run": self.dry_run,
+            }
+        )
 
         # Parse file key to needed information
         (
@@ -158,10 +133,10 @@ class FileProcessor:
         )
 
         # Calibrate/Process file with Instrument Package
-        calibrated_filename = self._calibrate_file(self, this_instr, file_path)
+        calibrated_filename = self._calibrate_file(this_instr, file_path, self.dry_run)
 
         # Push file to S3 Bucket
-        new_file_key = self._put_file(
+        self._put_file(
             science_filename_parser,
             destination_bucket,
             calibrated_filename,
@@ -177,21 +152,22 @@ class FileProcessor:
         :type file_key: str
         :param environment: The current running environment (e.g., DEVELOPMENT, PRODUCTION).
         :type environment: str
-        :return: A tuple containing parsed file key, science file information, instrument name, and destination bucket.
+        :return: A tuple containing parsed file key, instrument name, and destination bucket.
         :rtype: tuple
         """
         # Parse file key to get instrument name
         file_key_array = file_key.split("/")
         parsed_file_key = file_key_array[-1]
+
         # Parse the science file name
         science_file = science_filename_parser(parsed_file_key)
         this_instr = science_file["instrument"]
         destination_bucket = get_instrument_bucket(this_instr, environment)
 
-        return parsed_file_key, science_file, this_instr, destination_bucket
+        return parsed_file_key, this_instr, destination_bucket
 
     @staticmethod
-    def _calibrate_file(self, instrument, file_path):
+    def _calibrate_file(instrument, file_path, dry_run=False):
         """
         Calibrates the file using the appropriate instrument library. This involves dynamic import of the calibration module and processing of the file.
 
@@ -199,6 +175,8 @@ class FileProcessor:
         :type instrument: str
         :param file_path: The path to the file that needs to be calibrated.
         :type file_path: Path
+        :param dry_run: Indicates whether the operation is a dry run.
+        :type dry_run: bool
         :return: The filename of the calibrated file.
         :rtype: string
         """
@@ -210,12 +188,46 @@ class FileProcessor:
             )
             calibration = getattr(instr_pkg, "calibration")
 
-            log.info(f"Using {INSTR_TO_PKG[instrument]} module for calibration")
+            # If USE_INSTRUMENT_TEST_DATA is set to True, use test data in package
+            if os.getenv("USE_INSTRUMENT_TEST_DATA") == "True":
+                log.info("Using test data from instrument package")
+                instr_pkg_data = __import__(
+                    f"{INSTR_TO_PKG[instrument]}.data",
+                    fromlist=["data"],
+                )
+                # Get all files in test data directory
+                test_data_dir = Path(instr_pkg_data.__path__[0])
+                test_data_files = list(test_data_dir.glob("**/*"))
+                log.info(f"Found {len(test_data_files)} files in test data directory")
+                log.info(f"Using {test_data_files} as test data")
+                # Get any files ending in .bin or .cdf and calibrate them
+                for test_data_file in test_data_files:
+                    if test_data_file.suffix in [".bin", ".cdf"]:
+                        log.info(f"Calibrating {test_data_file}")
+                        # Copy file to /test_data directory using shutil
+                        test_data_file_path = Path(test_data_file)
+                        file_path = Path(f"/test_data/{test_data_file_path.name}")
+                        shutil.copy(test_data_file_path, file_path)
+                        # Calibrate file
+                        calibrated_filename = calibration.process_file(file_path)[0]
+                        # Copy calibrated file to test data directory
+                        calibrated_file_path = Path(calibrated_filename)
+                        # Return name of calibrated file
+                        log.info(f"Calibrated file saved as {calibrated_file_path}")
+
+                        return calibrated_filename
+
+                # If no files ending in .bin or .cdf are found, raise an error
+                raise FileNotFoundError(
+                    "No files ending in .bin or .cdf found in test data directory"
+                )
+
             # Get name of new file
             new_file_path = calibration.process_file(file_path)[0]
             calibrated_filename = new_file_path.name
 
             return calibrated_filename
+
         except ValueError as e:
             log.error(e)
 
@@ -237,6 +249,11 @@ class FileProcessor:
         """
         # Download file from instrument bucket if not a dry run or use the specified file path
         if not dry_run:
+            # Check if using test data in instrument package
+            if os.getenv("USE_INSTRUMENT_TEST_DATA") == "True":
+                log.info("Using test data from instrument package")
+                return None
+
             # Check if file path is specified in environment variables
             if os.getenv("SDC_AWS_FILE_PATH"):
                 log.info(
@@ -296,9 +313,28 @@ class FileProcessor:
         new_file_key = create_s3_file_key(science_filename_parser, calibrated_filename)
 
         # Upload file to destination bucket if not a dry run
-        if not dry_run and not os.getenv("SDC_AWS_FILE_PATH"):
+        if dry_run:
+            log.info("Dry Run - File will not be uploaded")
+            return new_file_key
+
+        if os.getenv("USE_INSTRUMENT_TEST_DATA") == "True":
+            log.info("Using test data from instrument package")
+            return new_file_key
+
+        if not os.getenv("SDC_AWS_FILE_PATH"):
             # Initialize S3 Client
             s3_client = create_s3_client_session()
+
+            # Verify object does not exist in instrument bucket
+            if object_exists(
+                s3_client=s3_client,
+                bucket=destination_bucket,
+                file_key=new_file_key,
+            ):
+                log.warning(
+                    f"File {new_file_key} already exists in bucket {destination_bucket}"
+                )
+                return new_file_key
 
             # Upload file to destination bucket
             upload_file_to_s3(
@@ -309,158 +345,8 @@ class FileProcessor:
             )
 
         else:
-            log.info("Dry Run - File will not be uploaded")
+            log.info(
+                f"File Processed Locally - File will not be uploaded, available in mounted volume as: {Path(calibrated_filename).as_posix()}"
+            )
 
         return new_file_key
-
-    # @staticmethod
-    # def _generate_slack_artifacts(
-    #     file_path,
-    #     new_file_path,
-    #     slack_client,
-    #     slack_channel,
-    #     science_file,
-    #     calibrated_filename,
-    # ):
-    #     """
-    #     Generates and sends Slack notifications for the file processing pipeline. Includes error handling for Slack API interactions.
-
-    #     :param file_path: The original file path.
-    #     :type file_path: Path
-    #     :param new_file_path: The new file path after processing.
-    #     :type new_file_path: Path
-    #     :param slack_client: The Slack client for sending notifications.
-    #     :type slack_client: SlackClient
-    #     :param slack_channel: The Slack channel where notifications will be sent.
-    #     :type slack_channel: str
-    #     :param science_file: Information about the science file.
-    #     :type science_file: dict
-    #     :param calibrated_filename: The pathname of the new file.
-    #     :type calibrated_filename: str
-    #     """
-    #     try:
-    #         # Initialize the slack client
-    #         slack_client = get_slack_client(
-    #             slack_token=os.getenv("SDC_AWS_SLACK_TOKEN")
-    #         )
-
-    #         # Initialize the slack channel
-    #         slack_channel = os.getenv("SDC_AWS_SLACK_CHANNEL")
-
-    #         # Send Slack Notification
-    #         send_pipeline_notification(
-    #             slack_client=slack_client,
-    #             slack_channel=slack_channel,
-    #             path=calibrated_filename,
-    #             alert_type="processed",
-    #         )
-
-    #     except SlackApiError as e:
-    #         error_code = int(e.response["Error"]["Code"])
-    #         if error_code == 404:
-    #             log.error(
-    #                 {
-    #                     "status": "ERROR",
-    #                     "message": "Slack Token is invalid",
-    #                 }
-    #             )
-
-    #     except Exception as e:
-    #         log.error(
-    #             {
-    #                 "status": "ERROR",
-    #                 "message": f"Error when initializing slack client: {e}",
-    #             }
-    #         )
-
-    # @staticmethod
-    # def _generate_timestream_artifacts(
-    #     file_key, new_file_key, destination_bucket, environment
-    # ):
-    #     """
-    #     Logs file processing events to Amazon Timestream. Handles the initialization of the Timestream client and logs the necessary information.
-
-    #     :param file_key: The key of the original file.
-    #     :type file_key: str
-    #     :param new_file_key: The key of the processed file.
-    #     :type new_file_key: str
-    #     :param destination_bucket: The name of the S3 bucket where the processed file is stored.
-    #     :type destination_bucket: str
-    #     :param environment: The current running environment.
-    #     :type environment: str
-    #     """
-    #     try:
-    #         # Initialize Timestream Client
-    #         timestream_client = create_timestream_client_session(TSD_REGION)
-    #         # Log to timeseries database
-    #         log_to_timestream(
-    #             timestream_client=timestream_client,
-    #             action_type="PUT",
-    #             file_key=file_key,
-    #             new_file_key=new_file_key,
-    #             source_bucket=destination_bucket,
-    #             destination_bucket=destination_bucket,
-    #             environment=environment,
-    #         )
-
-    #     except botocore.exceptions.ClientError:
-    #         log.error(
-    #             {
-    #                 "status": "ERROR",
-    #                 "message": "Timestream Client could not be initialized",
-    #             }
-    #         )
-
-    # @staticmethod
-    # def _generate_cdftracker_artifacts(
-    #     science_filename_parser, file_path, new_file_path, science_file
-    # ):
-    #     """
-    #     Tracks processed science product in the CDF Tracker file database. It involves initializing the database engine, setting up database tables, and tracking both the original and processed files.
-
-    #     :param science_filename_parser: The parser function to process file names.
-    #     :type science_filename_parser: function
-    #     :param file_path: The path of the original file.
-    #     :type file_path: Path
-    #     :param new_file_path: The path of the processed file.
-    #     :type new_file_path: Path
-    #     :param science_file: Information about the science file.
-    #     :type science_file: dict
-    #     """
-    #     secret_arn = os.getenv("RDS_SECRET_ARN", None)
-    #     if secret_arn:
-    #         try:
-    #             # Get Database Credentials
-    #             session = boto3.session.Session()
-    #             client = session.client(service_name="secretsmanager")
-    #             response = client.get_secret_value(SecretId=secret_arn)
-    #             secret = json.loads(response["SecretString"])
-    #             connection_string = (
-    #                 f"postgresql://{secret['username']}:{secret['password']}@"
-    #                 f"{secret['host']}:{secret['port']}/{secret['dbname']}"
-    #             )
-    #             # Initialize the database engine
-    #             database_engine = create_engine(connection_string)
-
-    #             # Setup the database tables if they do not exist
-    #             create_tables(database_engine)
-
-    #             # Set tracker to CDFTracker
-    #             cdf_tracker = tracker.CDFTracker(
-    #                 database_engine, science_filename_parser
-    #             )
-
-    #             # If level is L0 should be tracked in CDF
-    #             if science_file["level"] == "l0":
-    #                 cdf_tracker.track(file_path)
-
-    #             # Track processed file in CDF
-    #             cdf_tracker.track(Path(new_file_path))
-
-    #         except Exception as e:
-    #             log.error(
-    #                 {
-    #                     "status": "ERROR",
-    #                     "message": f"Error when initializing database engine: {e}",
-    #                 }
-    #             )

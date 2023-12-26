@@ -11,3 +11,13 @@ cdk.out
 
 # CDF artifact directory
 *.cdf
+
+# Python artifacts
+*.egg
+*.egg-info
+dist
+build
+*.pyc
+*.log
+.coverage
+htmlcov
