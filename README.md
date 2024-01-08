@@ -15,9 +15,9 @@ The container will contain the latest release code as the production environment
     
     `docker build -t processing_function:latest . --no-cache`
 
-2. Run the lambda container image you've built (After using your mfa script), this will start the lambda runtime environment:
+2. Run the lambda container image you've built, this will start the lambda runtime environment:
     
-    `docker run -p 9000:8080 -v /home/dbarrous/dbarrous/sdc_aws_processing_lambda/lambda_function/tests/test_data:/test_data -e SDC_AWS_FILE_PATH=/test_data/hermes_EEA_l0_2023042-000000_v0.bin processing_function:latest`
+    `docker run -p 9000:8080 -v <directory_for_processed_files>:/test_data -e SDC_AWS_FILE_PATH=/test_data/<file_to_process_name> processing_function:latest`
 
 3. From a `separate` terminal, make a curl request to the running lambda function:
 
@@ -34,9 +34,9 @@ The container will contain the latest release code as the production environment
     
     `docker build -t processing_function:latest . --no-cache`
 
-2. Run the lambda container image you've built (After using your mfa script), this will start the lambda runtime environment:
+2. Run the lambda container image you've built, this will start the lambda runtime environment:
     
-    `docker run -p 9000:8080 -v /home/dbarrous/dbarrous/sdc_aws_processing_lambda/lambda_function/tests/test_data:/test_data -e USE_INSTRUMENT_TEST_DATA=True processing_function:latest`
+    `docker run -p 9000:8080 -v <directory_for_processed_files>:/test_data -e USE_INSTRUMENT_TEST_DATA=True processing_function:latest`
 
 3. From a `separate` terminal, make a curl request to the running lambda function:
 
