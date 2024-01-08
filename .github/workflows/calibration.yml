@@ -30,12 +30,15 @@ jobs:
       id: test-lambda
       run: |
         # Run curl and write the HTTP status code to a variable
-        HTTP_STATUS=$(curl -X POST "http://localhost:9000/2015-03-31/functions/function/invocations" \
-                      -d @lambda_function/tests/test_data/test_eea_event.json \
-                      -o response.json -w '%{http_code}')
-    
-        # Check if the HTTP status is 200 (OK)
-        if [ "$HTTP_STATUS" -eq 200 ]; then
+        HTTP_STATUS=$(curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" -d @lambda_function/tests/test_data/test_eea_event.json)
+        echo "HTTP Status: $HTTP_STATUS"
+
+        # Grep the HTTP status code from the curl output for 200 (success)
+        STATUS_CODE=$(echo $HTTP_STATUS | grep -oP '200')
+        echo "Status Code: $STATUS_CODE"
+
+        # If the HTTP status code is 200, then the test is successful
+        if [ "$STATUS_CODE" == "200" ]; then
           echo "Success: HTTP status is 200"
           echo "test_success=true" >> $GITHUB_OUTPUT
           exit 0  # Exit with success
