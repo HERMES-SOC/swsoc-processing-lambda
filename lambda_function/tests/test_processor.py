@@ -6,10 +6,10 @@ from pathlib import Path
 
 
 os.environ["SDC_AWS_CONFIG_FILE_PATH"] = "lambda_function/src/config.yaml"
-from src.file_processor.file_processor import (
-    handle_event,
-    FileProcessor,
-)
+from src.file_processor.file_processor import (  # noqa: E402
+    handle_event,  # noqa: E402
+    FileProcessor,  # noqa: E402
+)  # noqa: E402
 
 
 @pytest.fixture
