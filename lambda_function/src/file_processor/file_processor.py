@@ -17,11 +17,9 @@ from sdc_aws_utils.config import (
     get_instrument_bucket,
 )
 from sdc_aws_utils.aws import (
-    create_s3_client_session,
-    object_exists,
-    download_file_from_s3,
-    upload_file_to_s3,
-    create_s3_file_key,
+    parse_file_key,
+    get_science_file,
+    push_science_file,
 )
 
 # Configure logger
@@ -118,14 +116,15 @@ class FileProcessor:
         )
 
         # Parse file key to needed information
-        (
-            parsed_file_key,
-            this_instr,
-            destination_bucket,
-        ) = self._parse_file(self.file_key, self.environment)
+        parsed_file_key = parse_file_key(self.file_key)
+
+        # Parse the science file name
+        science_file = science_filename_parser(parsed_file_key)
+        this_instr = science_file["instrument"]
+        destination_bucket = get_instrument_bucket(this_instr, self.environment)
 
         # Download file from S3 or get local file path
-        file_path = self._get_file(
+        file_path = get_science_file(
             self.instrument_bucket_name,
             self.file_key,
             parsed_file_key,
@@ -136,7 +135,7 @@ class FileProcessor:
         calibrated_filename = self._calibrate_file(this_instr, file_path, self.dry_run)
 
         # Push file to S3 Bucket
-        self._put_file(
+        push_science_file(
             science_filename_parser,
             destination_bucket,
             calibrated_filename,
@@ -144,32 +143,11 @@ class FileProcessor:
         )
 
     @staticmethod
-    def _parse_file(file_key, environment):
-        """
-        Parses the file key to extract the instrument name, and determines the destination bucket based on the instrument and environment.
-
-        :param file_key: The key of the file in the S3 bucket.
-        :type file_key: str
-        :param environment: The current running environment (e.g., DEVELOPMENT, PRODUCTION).
-        :type environment: str
-        :return: A tuple containing parsed file key, instrument name, and destination bucket.
-        :rtype: tuple
-        """
-        # Parse file key to get instrument name
-        file_key_array = file_key.split("/")
-        parsed_file_key = file_key_array[-1]
-
-        # Parse the science file name
-        science_file = science_filename_parser(parsed_file_key)
-        this_instr = science_file["instrument"]
-        destination_bucket = get_instrument_bucket(this_instr, environment)
-
-        return parsed_file_key, this_instr, destination_bucket
-
-    @staticmethod
     def _calibrate_file(instrument, file_path, dry_run=False):
         """
-        Calibrates the file using the appropriate instrument library. This involves dynamic import of the calibration module and processing of the file.
+        Calibrates the file using the appropriate instrument library.
+        This involves dynamic import of the calibration module and
+        processing of the file.
 
         :param instrument: The name of the instrument used for calibration.
         :type instrument: str
@@ -232,123 +210,3 @@ class FileProcessor:
 
         except ValueError as e:
             log.error(e)
-
-    @staticmethod
-    def _get_file(instrument_bucket_name, file_key, parsed_file_key, dry_run=False):
-        """
-        Downloads the file from the specified S3 bucket, if not in a dry run. If a file path is specified in the environment variables, it uses that instead.
-
-        :param instrument_bucket_name: The name of the S3 bucket where the file is located.
-        :type instrument_bucket_name: str
-        :param file_key: The key of the file in the S3 bucket.
-        :type file_key: str
-        :param parsed_file_key: The parsed name of the file.
-        :type parsed_file_key: str
-        :param dry_run: Indicates whether the operation is a dry run.
-        :type dry_run: bool
-        :return: The path to the downloaded file or None if in a dry run.
-        :rtype: Path or None
-        """
-        # Download file from instrument bucket if not a dry run or use the specified file path
-        if not dry_run:
-            # Check if using test data in instrument package
-            if os.getenv("USE_INSTRUMENT_TEST_DATA") == "True":
-                log.info("Using test data from instrument package")
-                return None
-
-            # Check if file path is specified in environment variables
-            if os.getenv("SDC_AWS_FILE_PATH"):
-                log.info(
-                    f"Using file path specified in environment variables {os.getenv('SDC_AWS_FILE_PATH')}"
-                )
-                file_path = Path(os.getenv("SDC_AWS_FILE_PATH"))
-                return file_path
-
-            # Initialize S3 Client
-            s3_client = create_s3_client_session()
-
-            # Verify object exists in instrument bucket
-            if not (
-                object_exists(
-                    s3_client=s3_client,
-                    bucket=instrument_bucket_name,
-                    file_key=file_key,
-                )
-                or dry_run
-            ):
-                raise FileNotFoundError(
-                    f"File {file_key} does not exist in bucket {instrument_bucket_name}"
-                )
-
-            # Download file from S3 bucket if no file path is specified
-            file_path = download_file_from_s3(
-                s3_client,
-                instrument_bucket_name,
-                file_key,
-                parsed_file_key,
-            )
-
-            return file_path
-        else:
-            log.info("Dry Run - File will not be downloaded")
-            return None
-
-    @staticmethod
-    def _put_file(
-        science_filename_parser, destination_bucket, calibrated_filename, dry_run=False
-    ):
-        """
-        Uploads a file to the specified destination bucket in S3, if not in a dry run. Generates the file key for the new file using the given parser.
-
-        :param science_filename_parser: The parser function to generate a file key.
-        :type science_filename_parser: function
-        :param destination_bucket: The name of the destination S3 bucket.
-        :type destination_bucket: str
-        :param calibrated_filename: The pathname of the new file to be uploaded.
-        :type calibrated_filename: str
-        :param dry_run: Indicates whether the operation is a dry run.
-        :type dry_run: bool
-        :return: The key of the newly uploaded file.
-        :rtype: str
-        """
-        # Generate file key for new file
-        new_file_key = create_s3_file_key(science_filename_parser, calibrated_filename)
-
-        # Upload file to destination bucket if not a dry run
-        if dry_run:
-            log.info("Dry Run - File will not be uploaded")
-            return new_file_key
-
-        if os.getenv("USE_INSTRUMENT_TEST_DATA") == "True":
-            log.info("Using test data from instrument package")
-            return new_file_key
-
-        if not os.getenv("SDC_AWS_FILE_PATH"):
-            # Initialize S3 Client
-            s3_client = create_s3_client_session()
-
-            # Verify object does not exist in instrument bucket
-            if object_exists(
-                s3_client=s3_client,
-                bucket=destination_bucket,
-                file_key=new_file_key,
-            ):
-                log.warning(
-                    f"File {new_file_key} already exists in bucket {destination_bucket}"
-                )
-                return new_file_key
-
-            # Upload file to destination bucket
-            upload_file_to_s3(
-                s3_client=s3_client,
-                destination_bucket=destination_bucket,
-                filename=calibrated_filename,
-                file_key=new_file_key,
-            )
-
-        else:
-            log.info(
-                f"File Processed Locally - File will not be uploaded, available in mounted volume as: {Path(calibrated_filename).as_posix()}"
-            )
-
-        return new_file_key

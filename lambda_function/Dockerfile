@@ -20,7 +20,7 @@ WORKDIR ${FUNCTION_DIR}
 
 # Set Up Lambda Runtime Environment version pin each time the base image is updated
 RUN apt-get update -y && apt-get install -y curl && curl -Lo /usr/local/bin/aws-lambda-rie \
-    https://github.com/aws/aws-lambda-runtime-interface-emulator/releases/latest/download/aws-lambda-rie && \
+    https://github.com/aws/aws-lambda-runtime-interface-emulator/releases/download/v1.15/aws-lambda-rie && \
     chmod +x /usr/local/bin/aws-lambda-rie
 
 # Copy files from the source folder

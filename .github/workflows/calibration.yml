@@ -1,14 +1,16 @@
 name: Test Lambda Function Locally and Upload Artifacts
 
-on: [pull_request]
+on: [pull_request, pull_request_target]
 
 jobs:
   test-and-upload:
+    permissions:
+        pull-requests: write
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Build Lambda Docker Image
       run: |
@@ -26,8 +28,20 @@ jobs:
 
     - name: Test Lambda Function with curl
       run: |
-        curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" -d @lambda_function/tests/test_data/test_eea_event.json
-
+        # Run curl and write the HTTP status code to a variable
+        HTTP_STATUS=$(curl -X POST "http://localhost:9000/2015-03-31/functions/function/invocations" \
+                      -d @lambda_function/tests/test_data/test_eea_event.json \
+                      -o response.json -w '%{http_code}')
+    
+        # Check if the HTTP status is 200 (OK)
+        if [ "$HTTP_STATUS" -eq 200 ]; then
+          echo "Success: HTTP status is 200"
+          exit 0  # Exit with success
+        else
+          echo "Error or unexpected HTTP status: $HTTP_STATUS"
+          exit 1  # Exit with failure
+        fi
+    
     - name: Copy Processed Files from Container
       run: |
         container_id=$(docker ps -qf "ancestor=processing_function:latest")
@@ -37,7 +51,18 @@ jobs:
         docker cp $container_id:/test_data/. processed_files/
 
     - name: Upload Processed Files as Artifact
+      id: artifact-upload-step
       uses: actions/upload-artifact@v4
       with:
-        name: processed-files
-        path: processed_files/
+          name: processed-files
+          path: processed_files/
+
+    - name: Echo Artifact URL
+      run: echo "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }}"
+    
+    - name: Comment PR
+      uses: thollander/actions-comment-pull-request@v2
+      if: github.event_name == 'pull_request_target'
+      with:
+        message: |
+            The processed files are available as an artifact: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }}
