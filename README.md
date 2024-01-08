@@ -23,7 +23,9 @@ The container will contain the latest release code as the production environment
 
     `curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" -d @lambda_function/tests/test_data/test_eea_event.json`
 
-4. Clean up dangling images and containers:
+4. Close original terminal running the docker image.
+
+5. Clean up dangling images and containers:
 
     `docker system prune`
 
@@ -40,7 +42,9 @@ The container will contain the latest release code as the production environment
 
     `curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" -d @lambda_function/tests/test_data/test_eea_event.json`
 
-4. Clean up dangling images and containers:
+4. Close original terminal running the docker image.
+
+5. Clean up dangling images and containers:
 
     `docker system prune`
 
