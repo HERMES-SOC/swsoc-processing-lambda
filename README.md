@@ -13,7 +13,7 @@ The container will contain the latest release code as the production environment
 ### **Testing Locally (Using own Test Data)**:
 1. Build the lambda container image (from within the lambda_function folder) you'd like to test: 
     
-    `docker build -t processing_function:latest .`
+    `docker build -t processing_function:latest . --no-cache`
 
 2. Run the lambda container image you've built (After using your mfa script), this will start the lambda runtime environment:
     
@@ -23,10 +23,14 @@ The container will contain the latest release code as the production environment
 
     `curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" -d @lambda_function/tests/test_data/test_eea_event.json`
 
+4. Clean up dangling images and containers:
+
+    `docker system prune`
+
 ### **Testing Locally (Using own Instrument Package Test Data)**:
 1. Build the lambda container image (from within the lambda_function folder) you'd like to test: 
     
-    `docker build -t processing_function:latest .`
+    `docker build -t processing_function:latest . --no-cache`
 
 2. Run the lambda container image you've built (After using your mfa script), this will start the lambda runtime environment:
     
@@ -35,6 +39,11 @@ The container will contain the latest release code as the production environment
 3. From a `separate` terminal, make a curl request to the running lambda function:
 
     `curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" -d @lambda_function/tests/test_data/test_eea_event.json`
+
+4. Clean up dangling images and containers:
+
+    `docker system prune`
+
 
 ### **How this Lambda Function is deployed**
 This lambda function is part of the main SWxSOC Pipeline ([Architecture Repo Link](https://github.com/HERMES-SOC/sdc_aws_pipeline_architecture)). It is deployed via AWS Codebuild within that repository. It is first built and tagged within the appropriate production or development repository (depending if it is a release or commit). View the Codebuild CI/CD file [here](buildspec.yml).
