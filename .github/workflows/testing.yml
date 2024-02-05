@@ -31,6 +31,5 @@ jobs:
         wget https://sdc-aws-support.s3.amazonaws.com/cdf-binaries/latest.zip
         unzip latest.zip
         export CDF_LIB=/cdf/lib
-
         pytest --pyargs lambda_function --cov lambda_function
 
