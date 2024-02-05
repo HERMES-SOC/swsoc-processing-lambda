@@ -49,7 +49,9 @@ def handle_event(event, context) -> dict:
             s3_bucket = s3_event["s3"]["bucket"]["name"]
             file_key = s3_event["s3"]["object"]["key"]
 
-            FileProcessor(s3_bucket=s3_bucket, file_key=file_key, environment=environment)
+            FileProcessor(
+                s3_bucket=s3_bucket, file_key=file_key, environment=environment
+            )
 
             return {"statusCode": 200, "body": "File Processed Successfully"}
 
