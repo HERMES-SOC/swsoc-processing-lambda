@@ -26,6 +26,12 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install -r requirements.txt
 
+    - name: Install CDF library on Ubuntu
+      run: |
+        wget https://sdc-aws-support.s3.amazonaws.com/cdf-binaries/latest.zip
+        unzip latest.zip
+        echo "CDF_LIB=cdf/lib" >> $GITHUB_ENV
+
     - name: Run tests
       run: |
         pytest -s lambda_function/tests --cov=lambda_function/src --cov-report=html --log-cli-level=INFO
