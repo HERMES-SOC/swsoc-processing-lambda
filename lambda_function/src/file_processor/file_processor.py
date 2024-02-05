@@ -37,31 +37,31 @@ def handle_event(event, context) -> dict:
     :return: Returns a 200 (Successful) / 500 (Error) HTTP response
     :rtype: dict
     """
-    try:
-        environment = os.getenv("LAMBDA_ENVIRONMENT", "DEVELOPMENT")
+    # try:
+    environment = os.getenv("LAMBDA_ENVIRONMENT", "DEVELOPMENT")
 
-        # Check if SNS or S3 event
-        records = json.loads(event["Records"][0]["Sns"]["Message"])["Records"]
+    # Check if SNS or S3 event
+    records = json.loads(event["Records"][0]["Sns"]["Message"])["Records"]
 
-        # Parse message from SNS Notification
-        for s3_event in records:
-            # Extract needed information from event
-            s3_bucket = s3_event["s3"]["bucket"]["name"]
-            file_key = s3_event["s3"]["object"]["key"]
+    # Parse message from SNS Notification
+    for s3_event in records:
+        # Extract needed information from event
+        s3_bucket = s3_event["s3"]["bucket"]["name"]
+        file_key = s3_event["s3"]["object"]["key"]
 
-            FileProcessor(
-                s3_bucket=s3_bucket, file_key=file_key, environment=environment
-            )
+        FileProcessor(
+            s3_bucket=s3_bucket, file_key=file_key, environment=environment
+        )
 
-            return {"statusCode": 200, "body": "File Processed Successfully"}
+        return {"statusCode": 200, "body": "File Processed Successfully"}
 
-    except Exception as e:
-        log.error({"status": "ERROR", "message": e})
+    # except Exception as e:
+    #     log.error({"status": "ERROR", "message": e})
 
-        return {
-            "statusCode": 500,
-            "body": json.dumps(f"Error Processing File: {e}"),
-        }
+    #     return {
+    #         "statusCode": 500,
+    #         "body": json.dumps(f"Error Processing File: {e}"),
+    #     }
 
 
 class FileProcessor:
@@ -158,56 +158,55 @@ class FileProcessor:
         :return: The filename of the calibrated file.
         :rtype: string
         """
-        try:
-            # Dynamically import instrument package
-            instr_pkg = __import__(
-                f"{INSTR_TO_PKG[instrument]}.calibration",
-                fromlist=["calibration"],
+        # try:
+        # Dynamically import instrument package
+        instr_pkg = __import__(
+            f"{INSTR_TO_PKG[instrument]}.calibration",
+            fromlist=["calibration"],
+        )
+        calibration = getattr(instr_pkg, "calibration")
+
+        # If USE_INSTRUMENT_TEST_DATA is set to True, use test data in package
+        if os.getenv("USE_INSTRUMENT_TEST_DATA") == "True":
+            log.info("Using test data from instrument package")
+            instr_pkg_data = __import__(
+                f"{INSTR_TO_PKG[instrument]}.data",
+                fromlist=["data"],
             )
-            calibration = getattr(instr_pkg, "calibration")
+            # Get all files in test data directory
+            test_data_dir = Path(instr_pkg_data.__path__[0])
+            test_data_files = list(test_data_dir.glob("**/*"))
+            log.info(f"Found {len(test_data_files)} files in test data directory")
+            log.info(f"Using {test_data_files} as test data")
+            # Get any files ending in .bin or .cdf and calibrate them
+            for test_data_file in test_data_files:
+                if test_data_file.suffix in [".bin", ".cdf"]:
+                    log.info(f"Calibrating {test_data_file}")
+                    # Make /test_data directory if it doesn't exist
+                    Path("/test_data").mkdir(parents=True, exist_ok=True)
+                    # Copy file to /test_data directory using shutil
+                    test_data_file_path = Path(test_data_file)
+                    file_path = Path(f"/test_data/{test_data_file_path.name}")
+                    shutil.copy(test_data_file_path, file_path)
+                    # Calibrate file
+                    calibrated_filename = calibration.process_file(file_path)[0]
+                    # Copy calibrated file to test data directory
+                    calibrated_file_path = Path(calibrated_filename)
+                    # Return name of calibrated file
+                    log.info(f"Calibrated file saved as {calibrated_file_path}")
 
-            # If USE_INSTRUMENT_TEST_DATA is set to True, use test data in package
-            if os.getenv("USE_INSTRUMENT_TEST_DATA") == "True":
-                log.info("Using test data from instrument package")
-                instr_pkg_data = __import__(
-                    f"{INSTR_TO_PKG[instrument]}.data",
-                    fromlist=["data"],
-                )
-                # Get all files in test data directory
-                test_data_dir = Path(instr_pkg_data.__path__[0])
-                test_data_files = list(test_data_dir.glob("**/*"))
-                log.info(f"Found {len(test_data_files)} files in test data directory")
-                log.info(f"Using {test_data_files} as test data")
-                # Get any files ending in .bin or .cdf and calibrate them
-                for test_data_file in test_data_files:
-                    if test_data_file.suffix in [".bin", ".cdf"]:
-                        log.info(f"Calibrating {test_data_file}")
-                        # Make /test_data directory if it doesn't exist
-                        Path("/test_data").mkdir(parents=True, exist_ok=True)
-                        # Copy file to /test_data directory using shutil
-                        test_data_file_path = Path(test_data_file)
-                        file_path = Path(f"/test_data/{test_data_file_path.name}")
-                        shutil.copy(test_data_file_path, file_path)
-                        # Calibrate file
-                        calibrated_filename = calibration.process_file(file_path)[0]
-                        # Copy calibrated file to test data directory
-                        calibrated_file_path = Path(calibrated_filename)
-                        # Return name of calibrated file
-                        log.info(f"Calibrated file saved as {calibrated_file_path}")
+                    return calibrated_filename
 
-                        return calibrated_filename
+            # If no files ending in .bin or .cdf are found, raise an error
+            raise FileNotFoundError(
+                "No files ending in .bin or .cdf found in test data directory"
+            )
+        log.info(f"Calibrating {file_path}")
+        # Get name of new file
+        new_file_path = Path(calibration.process_file(Path(file_path))[0])
+        calibrated_filename = new_file_path.name
 
-                # If no files ending in .bin or .cdf are found, raise an error
-                raise FileNotFoundError(
-                    "No files ending in .bin or .cdf found in test data directory"
-                )
-            log.info(f"Calibrating {file_path}")
-            # Get name of new file
-            new_file_path = calibration.process_file(file_path)[0]
-            log.info(f"Calibrated file saved as {new_file_path}")
-            calibrated_filename = new_file_path.name
+        return calibrated_filename
 
-            return calibrated_filename
-
-        except ValueError as e:
-            log.error(e)
+        # except ValueError as e:
+        #     log.error(e)
