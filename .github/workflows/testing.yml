@@ -34,5 +34,5 @@ jobs:
 
     - name: Run tests
       run: |
-        pytest -s lambda_function/tests --cov=lambda_function/src --cov-report=html --log-cli-level=INFO
+        pytest --pyargs lambda_function --cov lambda_function
 
