@@ -11,6 +11,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-20.04
+    container:
+      image: public.ecr.aws/w5r9l1c8/dev-swsoc-docker-lambda-base:latest
 
     steps:
     - uses: actions/checkout@v3
@@ -28,8 +30,5 @@ jobs:
 
     - name: Run tests
       run: |
-        wget https://sdc-aws-support.s3.amazonaws.com/cdf-binaries/latest.zip
-        unzip latest.zip
-        export CDF_LIB=/cdf/lib
         pytest --pyargs lambda_function --cov lambda_function/src
 
