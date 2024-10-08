@@ -3,6 +3,7 @@ import os
 import json
 from moto import mock_s3
 from pathlib import Path
+from swxsoc import log
 
 
 os.environ["SDC_AWS_CONFIG_FILE_PATH"] = "lambda_function/src/config.yaml"
@@ -10,6 +11,8 @@ from src.file_processor.file_processor import (  # noqa: E402
     handle_event,  # noqa: E402
     FileProcessor,  # noqa: E402
 )  # noqa: E402
+
+log.enable_warnings_logging()
 
 
 @pytest.fixture
