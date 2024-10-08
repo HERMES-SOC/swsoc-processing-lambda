@@ -7,11 +7,12 @@ from swxsoc import log
 
 log.disable_warnings_logging()
 
+os.environ["SDC_AWS_CONFIG_FILE_PATH"] = "lambda_function/src/config.yaml"
 from src.file_processor.file_processor import (  # noqa: E402
     handle_event,  # noqa: E402
     FileProcessor,  # noqa: E402
+    configure_logger,  # noqa: E402
 )  # noqa: E402
-
 
 
 @pytest.fixture
