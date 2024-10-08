@@ -23,7 +23,7 @@ from sdc_aws_utils.aws import (
 )
 
 # Configure logger
-configure_logger()
+# configure_logger()
 
 
 def handle_event(event, context) -> dict:
