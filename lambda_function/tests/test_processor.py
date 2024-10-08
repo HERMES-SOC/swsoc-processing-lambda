@@ -3,8 +3,7 @@ import os
 import json
 from moto import mock_s3
 from pathlib import Path
-from swxsoc import log
-
+import astropy.logger
 
 os.environ["SDC_AWS_CONFIG_FILE_PATH"] = "lambda_function/src/config.yaml"
 from src.file_processor.file_processor import (  # noqa: E402
@@ -12,7 +11,7 @@ from src.file_processor.file_processor import (  # noqa: E402
     FileProcessor,  # noqa: E402
 )  # noqa: E402
 
-log.enable_warnings_logging()
+astropy.logger.disable_warnings_logging()
 
 
 @pytest.fixture
