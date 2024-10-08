@@ -1,6 +1,6 @@
 name: Test Lambda Function Locally and Upload Artifacts
 
-on: [pull_request, pull_request_target]
+on: [pull_request]
 
 jobs:
   test-and-upload:
@@ -19,7 +19,7 @@ jobs:
 
     - name: Run Lambda Docker Container
       run: |
-        docker run -d -p 9000:8080 -e USE_INSTRUMENT_TEST_DATA=True processing_function:latest
+        docker run -d -p 9000:8080 -e USE_INSTRUMENT_TEST_DATA=True -e SWXSOC_MISSION=hermes -e SWXSOC=processing_function:latest
         container_id=$(docker ps -qf "ancestor=processing_function:latest")
         echo "Container ID: $container_id"
 
