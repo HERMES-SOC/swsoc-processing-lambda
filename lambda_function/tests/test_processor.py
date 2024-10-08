@@ -3,7 +3,9 @@ import os
 import json
 from moto import mock_s3
 from pathlib import Path
-# from swxsoc import log
+from swxsoc import log
+
+log.disable_warnings_logging()
 
 from src.file_processor.file_processor import (  # noqa: E402
     handle_event,  # noqa: E402
